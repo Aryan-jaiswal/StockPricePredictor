@@ -2,7 +2,6 @@ from alpha_vantage.timeseries import TimeSeries
 import json
 import argparse
 
-#2FHBXTFLLMDMDSM7
 def save_dataset(symbol,t_ind):
 
 	key = json.load(open('key.json', 'r'))
