@@ -5,8 +5,9 @@ import argparse
 def save_dataset(symbol,t_ind):
 
 	key = json.load(open('key.json', 'r'))
-	ts = TimeSeries(key = key ,output_format = 'pandas')
-	# data,metadata = ts.get_daily(symbol = symbol, outputsize = 'full')
+	ts = TimeSeries(key = key['key'] ,output_format = 'pandas')
+	# data, meta_data = ts.get_intraday(symbol = symbol, interval='1min', outputsize='full')
+	data,metadata = ts.get_daily(symbol = symbol, outputsize = 'full')
 	with open(symbol+'_daily.csv','w') as file:
 		data.to_csv(path_or_buf = file)
 
