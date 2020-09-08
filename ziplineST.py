@@ -1,10 +1,7 @@
 import pytz
 from datetime import datetime
-from zipline.api import order, symbol, record, order_target
-from zipline.algorithm import TradingAlgorithm
-from zipline.data import bundles
+from zipline.api import order, symbol, record, order_target, order_target_percent, set_benchmark
 import numpy as np
-from trading_calendars import register_calendar, get_calendar
 
 # cal = get_calendar('NYSE')
 
@@ -36,6 +33,7 @@ from trading_calendars import register_calendar, get_calendar
 # %%zipline --start 2014-1-1 --end 2018-1-1 -o dma.pickle
 
 def initialize(context):
+	set_benchmark(symbol('AAPL'))
 	context.i = 0
 	context.asset = symbol('AAPL')
 
@@ -49,6 +47,25 @@ def handle_data(context, data):
 	#   return
 
 	df = data.history(context.asset, ['price', 'open', 'high', 'low', 'close', 'volume'], bar_count=10, frequency="1d")
+	df = SuperTrend(df,n,f)
+	# print(df['SuperTrend'])
+	current_positions = context.portfolio.positions[context.asset].amount
+	# Trading logic
+	if (df.ix[len(df)-1,'SuperTrend'] > df.ix[len(df)-2,'close']) :
+		order_target_percent(context.asset, 10, stop_price = 2*df.ix[len(df)-1,'ATR'])
+		record(AAPL=data.current(context.asset, ['price', 'open', 'high', 'low', 'close', 'volume']), SuperTrend = df['SuperTrend'], status = "buy")
+
+	elif (df.ix[len(df)-1,'SuperTrend'] < df.ix[len(df)-2,'close']) and current_positions!=0:
+		order_target_percent(context.asset, 0, stop_price = 2*df.ix[len(df)-1,'ATR'])
+
+		record(AAPL=data.current(context.asset, ['price', 'open', 'high', 'low', 'close', 'volume']), SuperTrend = df['SuperTrend'], status = "sell")
+	else:
+
+		record(AAPL=data.current(context.asset, ['price', 'open', 'high', 'low', 'close', 'volume']), SuperTrend = df['SuperTrend'], status = "---")
+
+
+def SuperTrend(df,n,f):
+	
 	df['H-L']=abs(df['high']-df['low'])
 	df['H-PC']=abs(df['high']-df['close'].shift(1))
 	df['L-PC']=abs(df['low']-df['close'].shift(1))
@@ -90,18 +107,5 @@ def handle_data(context, data):
 			df['SuperTrend'][i]=df['Lower Band'][i]
 		elif df['SuperTrend'][i-1]==df['Lower Band'][i-1] and df['close'][i]<=df['Lower Band'][i]:
 			df['SuperTrend'][i]=df['Upper Band'][i]   
-	
-	print(df['SuperTrend'])
-	# Trading logic
-	if (df.ix[len(df)-1,'SuperTrend'] < df.ix[len(df)-1,'close']):
-		print('bought')
-		# order_target orders as many shares as needed to
-		# achieve the desired number of shares.
-		order_target(context.asset, 100)
-	elif (df.ix[len(df)-1,'SuperTrend'] > df.ix[len(df)-1,'close']):
-		order_target(context.asset, 0)
-
-
-	# Save values for later inspection
-	record(AAPL=data.current(context.asset, ['price', 'open', 'high', 'low', 'close', 'volume']), SuperTrend = df['SuperTrend'])
-
+		
+	return df
