@@ -33,9 +33,9 @@ import numpy as np
 # %%zipline --start 2014-1-1 --end 2018-1-1 -o dma.pickle
 
 def initialize(context):
-	set_benchmark(symbol('AAPL'))
+	set_benchmark(symbol('MSFT'))
 	context.i = 0
-	context.asset = symbol('AAPL')
+	context.asset = symbol('MSFT')
 
 
 def handle_data(context, data):
